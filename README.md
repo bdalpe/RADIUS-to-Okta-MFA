@@ -1,4 +1,4 @@
-#OKTA Radius to MFA Gateway
+# OKTA Radius to MFA Gateway
 
 I ran into an issue with Okta and the Remote Desktop Gateway/Network Policy Server not working correctly. This program overcomes the issues and allows for you to enforce multi-factor authentication on connections made through the RD Gateway.
 
@@ -12,7 +12,7 @@ You will need the following information:
 3. The shared RADIUS secret the calling station
 
 ### Setup and Run
-####Standalone
+#### Standalone
 To run the program standalone:
 
 Ensure Python 3.6 is installed. Edit the environment variables in the `run.sh` script.
