@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  radius:
+    build: .
+    environment:
+      - OKTA_TENANT=yourtenant.okta.com
+      - OKTA_API_KEY=XXXXXX
+      - RADIUS_SECRET=******
+    ports:
+      - "1812:1812/udp"
+    tty: true
