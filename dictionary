@@ -116,6 +116,9 @@ ATTRIBUTE	NAS-Port-Type		61	integer
 ATTRIBUTE	Port-Limit		62	integer
 ATTRIBUTE	Login-LAT-Port		63	integer
 
+ATTRIBUTE   Tunnel-Client-Endpoint  66  string
+ATTRIBUTE   Tunnel-Server-Endpoint  67  string
+
 ATTRIBUTE	Acct-Tunnel-Connection	68	string
 
 ATTRIBUTE	ARAP-Password           70      string
