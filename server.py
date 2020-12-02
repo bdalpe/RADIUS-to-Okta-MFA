@@ -71,7 +71,7 @@ if __name__ == '__main__':
     # Add clients (address, secret, name)
 
     srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0")
-    srv.BindToAddress("")
+    srv.BindToAddress("0.0.0.0")
 
     logger.info("Starting server...")
 
