@@ -15,10 +15,10 @@ You will need the following information:
 #### Standalone
 To run the program standalone:
 
-Ensure Python 3.6 is installed. Edit the environment variables in the `run.sh` script.
+Ensure Python >3.6 is installed. Edit the environment variables in the `run.sh` script.
 
 ```commandline
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 /bin/sh run.sh
 ```
 
