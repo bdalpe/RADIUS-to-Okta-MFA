@@ -15,10 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class RadiusServer(Server):
-    def __init__(self, **kwargs):
-        url = os.getenv('OKTA_TENANT')
-        key = os.getenv('OKTA_API_KEY')
-        self.okta = OktaAPI(url=url, key=key)
+    def __init__(self, *args, **kwargs):
+        self.okta = OktaAPI(url=args[0], key=args[1])
 
         super().__init__(**kwargs)
 
@@ -58,18 +56,21 @@ class RadiusServer(Server):
         thread.start()
 
 
-if __name__ == '__main__':
-
+def run():
     # Check to make sure env variables are set
     if not all(v in os.environ for v in ["OKTA_API_KEY", "OKTA_TENANT", "RADIUS_SECRET"]):
         logger.error("Missing environment variables!")
         sys.exit("Missing environment variables!")
 
     # Create server and read the attribute dictionary
-    srv = RadiusServer(dict=Dictionary("dictionary"), coa_enabled=False)
+    srv = RadiusServer(
+        os.getenv('OKTA_TENANT'),
+        os.getenv('OKTA_API_KEY'),
+        dict=Dictionary("dictionary"),
+        coa_enabled=False
+    )
 
     # Add clients (address, secret, name)
-
     srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0")
     srv.BindToAddress("0.0.0.0")
 
@@ -77,3 +78,7 @@ if __name__ == '__main__':
 
     # Run the RADIUS server
     srv.Run()
+
+
+if __name__ == '__main__':
+    run()
