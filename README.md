@@ -34,3 +34,11 @@ docker-compose up -d
 #### API Permissions
 
 To follow security best practices, I recommend using the least privileged account permissions possible. To make this program work with Okta, a **Help Desk Administrator** level account is required. It is not recommended that you use an API key tied to a superadmin or org admin.
+
+#### Using `samAccountName` to Find a User
+
+By default, the server will use the Okta username to locate the user record, however some systems use `samAccountName` as the username identifier. To locate user records in Okta by the `samAccountName` attribute, add the following to your `run.sh`:
+
+```shell
+export OKTA_USE_SAMACCOUNTNAME=true
+```
