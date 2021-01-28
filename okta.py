@@ -1,7 +1,7 @@
 import logging
 
 from requests import Session
-from requests.compat import urljoin
+from requests.compat import urljoin, urlencode, quote
 from requests.exceptions import HTTPError
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -57,6 +57,14 @@ class OktaAPI(object):
         page = self._get(url)
 
         return page["id"]
+
+    def get_user_by_samaccountname(self, username):
+        data = urlencode({'search': f"profile.samaccountname eq \"{username}\""}, quote_via=quote)
+        url = urljoin(self.base_url, f"api/v1/users?{data}")
+
+        page = self._get(url)
+
+        return page[0]["id"]
 
     def get_user_push_factor(self, user_id):
         url = urljoin(self.base_url, 'api/v1/users/{}/factors'.format(user_id))

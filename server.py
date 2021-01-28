@@ -35,7 +35,10 @@ class RadiusServer(Server):
         reply.code = AccessReject
 
         try:
-            u = self.okta.get_user_id(user_name)
+            if os.environ.get('OKTA_USE_SAMACCOUNTNAME'):
+                u = self.okta.get_user_by_samaccountname(user_name)
+            else:
+                u = self.okta.get_user_id(user_name)
             f = self.okta.get_user_push_factor(u)
             if f is not None:
                 push = self.okta.push_verify(u, f["id"])

@@ -354,7 +354,44 @@ def mocked_sessions(*args, **kwargs):
                     }
                 }
             }
-        }
+        },
+        'https://fake/api/v1/users?search=profile.samaccountname%20eq%20%22username%22':
+            [
+                {
+                    "id": "00ub0oNGTSWTBKOLGLNR",
+                    "status": "ACTIVE",
+                    "created": "2013-06-24T16:39:18.000Z",
+                    "activated": "2013-06-24T16:39:19.000Z",
+                    "statusChanged": "2013-06-24T16:39:19.000Z",
+                    "lastLogin": "2013-06-24T17:39:19.000Z",
+                    "lastUpdated": "2013-07-02T21:36:25.344Z",
+                    "passwordChanged": "2013-07-02T21:36:25.344Z",
+                    "profile": {
+                        "firstName": "Eric",
+                        "lastName": "Judy",
+                        "email": "eric.judy@example.com",
+                        "secondEmail": "eric@example.org",
+                        "login": "eric.judy@example.com",
+                        "mobilePhone": "555-415-2011"
+                    },
+                    "credentials": {
+                        "password": {},
+                        "recovery_question": {
+                            "question": "The stars are projectors?"
+                        },
+                        "provider": {
+                            "type": "OKTA",
+                            "name": "OKTA"
+                        }
+                    },
+                    "_links": {
+                        "self": {
+                            "href": "https://fake/api/v1/users/00ub0oNGTSWTBKOLGLNR"
+                        }
+                    }
+                }
+            ]
+
     }
 
     u = url_data.get(args[0])
@@ -397,6 +434,16 @@ class TestOkta(unittest.TestCase):
         r = self.okta.push_verify(user_id, factor_id)
 
         self.assertEqual(r, ResponseCodes.FAILURE)
+
+    @patch('requests.Session.get', side_effect=mocked_sessions)
+    def test_get_user_by_samaccountname(self, mock_get):
+        samAccountName = 'username'
+        r = self.okta.get_user_by_samaccountname(samAccountName)
+
+        self.assertEqual(r, '00ub0oNGTSWTBKOLGLNR')
+
+        mock_get.assert_called_once_with('https://fake/api/v1/users?search=profile'
+                                         '.samaccountname%20eq%20%22username%22', params=None)
 
 
 class TestRadius(unittest.TestCase):
@@ -457,6 +504,41 @@ class TestRadius(unittest.TestCase):
             self.server.auth_handler(req)
             self.assertEqual(fd.data, b'\x02\x01\x00\x1b\x82\xb4\x88\xb4G\xbc:\xde\xc1\xe5A\xe0\xe7y\r\x1f!\x07state')
             self.assertIn('INFO:server:Push approved by isaac.brock@example.com.', log.output)
+
+    @patch('requests.Session.get', side_effect=mocked_sessions)
+    @patch('requests.Session.post', side_effect=mocked_sessions)
+    @patch('okta.OktaAPI.get_user_by_samaccountname')
+    @patch.dict(os.environ, {'OKTA_USE_SAMACCOUNTNAME': 'true'})
+    def test_using_samaccountname_flag(self, o, mock_get, mock_post):
+        self.assertIsNotNone(os.environ.get('OKTA_USE_SAMACCOUNTNAME'))
+
+        self.server.hosts["127.0.0.1"] = os.getenv('RADIUS_SECRET')
+        self.server.BindToAddress("127.0.0.1")
+
+        Client(server="127.0.0.1", secret=os.getenv('RADIUS_SECRET').encode(), dict=Dictionary("dictionary"))
+
+        # create request
+        req = AuthPacket(
+            id=AccessRequest,
+            secret=os.getenv('RADIUS_SECRET').encode(),
+            authenticator=b'01234567890ABCDEF',
+            dict=Dictionary("dictionary")
+        )
+        req["User-Name"] = 'username'
+        req["User-Password"] = req.PwCrypt('fake')
+        req["Proxy-State"] = 'state'.encode()
+        req.source = ("test", "port")
+        fd = MockFd()
+        req.fd = fd
+
+        # send request
+        with self.assertLogs('server', level='INFO') as log:
+            o.return_value = '00ub0oNGTSWTBKOLGLNR'
+            self.server.auth_handler(req)
+            o.assert_called_once_with('username')
+            self.assertEqual(fd.data, b'\x02\x01\x00\x1b\x82\xb4\x88\xb4G\xbc:\xde\xc1\xe5A\xe0\xe7y\r\x1f!\x07state')
+            self.assertIn('INFO:server:Push approved by username.', log.output)
+
 
     @patch.dict(os.environ, {}, clear=True)
     def test_without_env_set(self):
