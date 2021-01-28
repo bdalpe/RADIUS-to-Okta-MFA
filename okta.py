@@ -59,7 +59,7 @@ class OktaAPI(object):
         return page["id"]
 
     def get_user_by_samaccountname(self, username):
-        data = urlencode({'search': f"profile.samaccountname eq \"{username}\""}, quote_via=quote)
+        data = urlencode({'search': f"profile.samAccountName eq \"{username}\""}, quote_via=quote)
         url = urljoin(self.base_url, f"api/v1/users?{data}")
 
         page = self._get(url)

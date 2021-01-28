@@ -355,7 +355,7 @@ def mocked_sessions(*args, **kwargs):
                 }
             }
         },
-        'https://fake/api/v1/users?search=profile.samaccountname%20eq%20%22username%22':
+        'https://fake/api/v1/users?search=profile.samAccountName%20eq%20%22username%22':
             [
                 {
                     "id": "00ub0oNGTSWTBKOLGLNR",
@@ -443,7 +443,7 @@ class TestOkta(unittest.TestCase):
         self.assertEqual(r, '00ub0oNGTSWTBKOLGLNR')
 
         mock_get.assert_called_once_with('https://fake/api/v1/users?search=profile'
-                                         '.samaccountname%20eq%20%22username%22', params=None)
+                                         '.samAccountName%20eq%20%22username%22', params=None)
 
 
 class TestRadius(unittest.TestCase):
