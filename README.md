@@ -42,3 +42,13 @@ By default, the server will use the Okta username to locate the user record, how
 ```shell
 export OKTA_USE_SAMACCOUNTNAME=true
 ```
+
+#### Poll Timeout
+
+To reduce the likelihood that a user is prompted multiple times for a single authentication request, requests to the Okta verify endpoint are threaded. Internally, state is kept for each `user_id` that is authenticating. If multiple requests are received before the user has responded to the push challenge and the `OKTA_POLL_TIMEOUT` window has not expired yet, the subsequent requests will wait for the first request to complete and return the same result.
+
+To customize the timeout period for the verification request, set the `OKTA_POLL_TIMEOUT` environment variable. Default setting is 60 seconds. 
+
+```shell
+export OKTA_POLL_TIMEOUT=60
+```

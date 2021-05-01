@@ -9,7 +9,7 @@ USERNAME = "your_okta_username"
 PASSWORD = getpass.getpass(prompt="Enter the password for {}: ".format(USERNAME))
 RADIUS_SECRET = b"$upers3cret"
 
-srv = Client(server=SERVER, secret=RADIUS_SECRET, dict=Dictionary("dictionary"))
+srv = Client(server=SERVER, secret=RADIUS_SECRET, dict=Dictionary("dictionary"), timeout=30)
 
 # create request
 req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest, User_Name=USERNAME, NAS_Identifier="localhost")

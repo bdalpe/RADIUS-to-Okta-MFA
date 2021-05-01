@@ -8,7 +8,7 @@ from pyrad.client import Client
 from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessRequest, AuthPacket
 from server import run, RadiusServer
-from okta import OktaAPI, ResponseCodes
+from okta import OktaAPI, ResponseCodes, ThreadTTLContextManager
 
 
 # From pyrad/tests/mock.py
@@ -436,6 +436,18 @@ class TestOkta(unittest.TestCase):
         self.assertEqual(r, ResponseCodes.FAILURE)
 
     @patch('requests.Session.get', side_effect=mocked_sessions)
+    @patch('requests.Session.post', side_effect=mocked_sessions)
+    def test_push_verify_double(self, mock_get, mock_post):
+        user_id = '00ub0oNGTSWTBKOLGLNR'
+        factor_id = 'opfh52xcuft3J4uZc0g3'
+        r1 = self.okta.push_verify(user_id, factor_id)
+        r2 = self.okta.push_verify(user_id, factor_id)
+
+        self.assertEqual(r1, ResponseCodes.SUCCESS)
+        self.assertEqual(r2, ResponseCodes.SUCCESS)
+
+
+    @patch('requests.Session.get', side_effect=mocked_sessions)
     def test_get_user_by_samaccountname(self, mock_get):
         samAccountName = 'username'
         r = self.okta.get_user_by_samaccountname(samAccountName)
@@ -444,6 +456,36 @@ class TestOkta(unittest.TestCase):
 
         mock_get.assert_called_once_with('https://fake/api/v1/users?search=profile'
                                          '.samAccountName%20eq%20%22username%22', params=None)
+
+
+class TestThreadTTLContextManager(unittest.TestCase):
+    def setUp(self):
+        self.thread_mgr = ThreadTTLContextManager()
+
+    def t(self, num, q):
+        q.put("SUCCESS")
+        return
+
+    def test_orig(self):
+        thread = self.thread_mgr.get_or_create("fake", self.t, (1, ))
+        thread2 = self.thread_mgr.get_or_create("fake", self.t, (2, ))
+        self.assertEqual(thread, thread2)
+
+    @patch('time.time')
+    def test_time1(self, mock_time):
+        mock_time.return_value = 1618000000
+        thread = self.thread_mgr.get_or_create("fake", self.t, (1,))
+        mock_time.return_value = 1618000060
+        thread2 = self.thread_mgr.get_or_create("fake", self.t, (2,))
+        self.assertEqual(thread, thread2)
+
+    @patch('time.time')
+    def test_time2(self, mock_time):
+        mock_time.return_value = 1618000000
+        thread = self.thread_mgr.get_or_create("fake", self.t, (1,))
+        mock_time.return_value = 1618000100
+        thread2 = self.thread_mgr.get_or_create("fake", self.t, (2,))
+        self.assertNotEqual(thread, thread2)
 
 
 class TestRadius(unittest.TestCase):
