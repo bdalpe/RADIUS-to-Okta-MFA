@@ -7,7 +7,9 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import threading
 import queue
+from queue import Empty
 import time
+import os
 
 logger = logging.getLogger(__file__)
 
@@ -20,6 +22,44 @@ def error_handler(resp, *args, **kargs):
 class ResponseCodes:
     SUCCESS = 1
     FAILURE = 2
+
+
+class ThreadTTLContextManager:
+    """
+    Implements an "expiring" dict to handle outstanding requests to Okta.
+
+    Each dict per username holds a queue, thread, result, and TTL.
+    """
+    def __init__(self):
+        self.threads = {}
+        self.lock = threading.Lock()
+
+    def get_or_create(self, username, target, args):
+        self.lock.acquire()
+        if self.threads.get(username) and self.threads.get(username)['ttl'] >= time.time():
+            self.lock.release()
+            logger.debug(f"Reusing thread for {username}")
+            return self.threads.get(username)['thread']
+        else:
+            q = queue.Queue()
+            self.threads[username] = {
+                'queue': q,
+                'thread': threading.Thread(target=target, args=args + (q, )),
+                'result': None,
+                'ttl': time.time() + os.getenv("OKTA_POLL_TIMEOUT", 60)
+            }
+            logger.debug(f"Starting new thread for {username}")
+            self.threads[username]['thread'].start()
+            self.lock.release()
+            return self.threads[username]['thread']
+
+    def is_success(self, username):
+        try:
+            if self.threads[username]['result'] == 'SUCCESS' or self.threads.get(username)['queue'].get(block=False) == "SUCCESS":
+                self.threads[username]['result'] = 'SUCCESS'
+                return True
+        except Empty:
+            return False
 
 
 class OktaAPI(object):
@@ -40,6 +80,7 @@ class OktaAPI(object):
         session.mount('https://', adapter)
 
         self.session = session
+        self.thread_mgr = ThreadTTLContextManager()
 
     def _get(self, url, params=None):
         r = self.session.get(url, params=params)
@@ -77,39 +118,39 @@ class OktaAPI(object):
         except StopIteration:
             return None
 
-    def poll_verify(self, url, q):
+    def poll_verify(self, user_id, factor_id, q):
+        url = urljoin(self.base_url, 'api/v1/users/{}/factors/{}/verify'.format(user_id, factor_id))
+
+        logger.debug(f"Sending push notification for {user_id} (Factor: {factor_id})")
+        page = self._post(url)
+
+        poll_url = page["_links"]["poll"]["href"]
+
         t = 0
         while True:
-            page = self._get(url)
+            page = self._get(poll_url)
 
             if page["factorResult"] == "SUCCESS":
+                logger.debug(f"Push approved for {user_id}")
                 q.put("SUCCESS")
                 return
             elif page["factorResult"] == "REJECTED":
+                logger.debug(f"Push rejected for {user_id}")
                 q.put("FAILED")
                 return
 
             time.sleep(4)
             t += 4
 
-            if t > 60:
+            if t > os.getenv("OKTA_POLL_TIMEOUT", 60):
+                logger.debug(f"Push timed out for {user_id}")
                 return
 
     def push_verify(self, user_id, factor_id):
-        url = urljoin(self.base_url, 'api/v1/users/{}/factors/{}/verify'.format(user_id, factor_id))
+        polling_thread = self.thread_mgr.get_or_create(user_id, self.poll_verify, (user_id, factor_id, ))
+        polling_thread.join()
 
-        page = self._post(url)
-
-        poll_url = page["_links"]["poll"]["href"]
-
-        q = queue.Queue()
-        thread = threading.Thread(target=self.poll_verify, args=(poll_url, q))
-        thread.start()
-        thread.join()
-
-        if q.qsize() > 0:
-            if q.get() == "SUCCESS":
-                return ResponseCodes.SUCCESS
+        if self.thread_mgr.is_success(user_id):
+            return ResponseCodes.SUCCESS
 
         return ResponseCodes.FAILURE
-
