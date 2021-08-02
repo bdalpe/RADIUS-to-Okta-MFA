@@ -1,4 +1,4 @@
-name: Dockerfile Build
+name: Docker Hub Release
 
 on:
   push:
