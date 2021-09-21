@@ -73,11 +73,12 @@ def run():
         coa_enabled=False
     )
 
-    # Add clients (address, secret, name)
-    srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0")
+    # Add clients (address, secret, name, port)
+    port = os.getenv("RADIUS_PORT", 1812)
+    srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0", port)
     srv.BindToAddress("0.0.0.0")
 
-    logger.info("Starting server...")
+    logger.info(f"Starting server on port {port}...")
 
     # Run the RADIUS server
     srv.Run()
