@@ -65,20 +65,24 @@ def run():
         logger.error("Missing environment variables!")
         sys.exit("Missing environment variables!")
 
+    authport = int(os.getenv("RADIUS_AUTH_PORT", 1812))
+    acctport = int(os.getenv("RADIUS_ACCT_PORT", 1813))
+
     # Create server and read the attribute dictionary
     srv = RadiusServer(
         os.getenv('OKTA_TENANT'),
         os.getenv('OKTA_API_KEY'),
         dict=Dictionary("dictionary"),
-        coa_enabled=False
+        coa_enabled=False,
+        authport=authport,
+        acctport=acctport
     )
 
-    # Add clients (address, secret, name, port)
-    port = os.getenv("RADIUS_PORT", 1812)
-    srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0", port)
+    # Add clients (address, secret, name)
+    srv.hosts["0.0.0.0"] = RemoteHost("0.0.0.0", os.getenv("RADIUS_SECRET").encode(), "0.0.0.0")
     srv.BindToAddress("0.0.0.0")
 
-    logger.info(f"Starting server on port {port}...")
+    logger.info(f"Starting server on port {authport}...")
 
     # Run the RADIUS server
     srv.Run()
