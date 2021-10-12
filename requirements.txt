@@ -1,5 +1,5 @@
 certifi==2021.10.8
-charset_normalizer==2.0.6
+charset_normalizer==2.0.7
 idna==3.2
 netaddr==0.8.0
 requests==2.26.0
