@@ -1,4 +1,4 @@
-FROM python:3.9.11-alpine3.14
+FROM python:alpine3.14
 
 WORKDIR /tmp
 
