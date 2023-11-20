@@ -1,4 +1,4 @@
-certifi==2023.7.22
+certifi==2023.11.17
 charset_normalizer==3.3.2
 idna==3.4
 netaddr==0.9.0
