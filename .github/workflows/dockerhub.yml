@@ -31,15 +31,24 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          bdalpe/okta-radius-mfa
+          ghcr.io/bdalpe/okta-radius-mfa
+        tags: |
+          type=raw,value=latest
+          type=sha
+
     - name: Build and push
       id: docker_build
       uses: docker/build-push-action@v5
       with:
         push: true
         platforms: linux/amd64,linux/arm64
-        tags: | 
-          bdalpe/okta-radius-mfa:latest
-          ghcr.io/bdalpe/okta-radius-mfa:latest
+        tags: ${{ steps.meta.outputs.tags }}
 
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
