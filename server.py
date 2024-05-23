@@ -9,7 +9,7 @@ import os
 import sys
 import threading
 
-logging.basicConfig(level="INFO",
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
                     format="%(asctime)s [%(levelname)-8s] %(message)s")
 logger = logging.getLogger(__name__)
 

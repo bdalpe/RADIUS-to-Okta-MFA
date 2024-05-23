@@ -52,3 +52,11 @@ To customize the timeout period for the verification request, set the `OKTA_POLL
 ```shell
 export OKTA_POLL_TIMEOUT=60
 ```
+
+#### Debug Logging
+
+```shell
+export LOG_LEVEL=DEBUG
+```
+
+You can enable more verbose logging by setting the environment variable `LOG_LEVEL` to the required setting. The allowed values can be found in the [Python Logging documentation](https://docs.python.org/3/library/logging.html#levels). Upper or lowercase values are permitted as they will be automatically transformed to uppercase.
