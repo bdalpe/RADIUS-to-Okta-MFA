@@ -15,7 +15,7 @@ You will need the following information:
 #### Standalone
 To run the program standalone:
 
-Ensure Python >=3.8 is installed. Edit the environment variables in the `run.sh` script.
+Ensure Python >=3.9 is installed. Edit the environment variables in the `run.sh` script.
 
 ```commandline
 pip3 install -r requirements.txt
