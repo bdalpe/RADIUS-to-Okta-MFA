@@ -4,5 +4,5 @@ idna==3.10
 netaddr==1.3.0
 requests==2.32.3
 six==1.17.0
-urllib3==2.3.0
+urllib3==2.4.0
 pyrad==2.4
