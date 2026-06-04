@@ -1,6 +1,6 @@
 certifi==2026.5.20
 charset_normalizer==3.4.7
-idna==3.17
+idna==3.18
 netaddr==1.3.0
 requests==2.34.2
 six==1.17.0
