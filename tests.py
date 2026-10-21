@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
-from pyrad.packet import AccessRequest, AuthPacket
+from pyrad.packet import AccessAccept, AccessRequest, AuthPacket
 from server import run, RadiusServer
 from okta import OktaAPI, ResponseCodes, ThreadTTLContextManager
 
@@ -489,6 +489,13 @@ class TestThreadTTLContextManager(unittest.TestCase):
 
 
 class TestRadius(unittest.TestCase):
+    def assert_valid_accept(self, req, response):
+        reply = AuthPacket(packet=response, secret=req.secret, dict=req.dict)
+        self.assertEqual(reply.code, AccessAccept)
+        self.assertEqual(reply["Proxy-State"], req["Proxy-State"])
+        self.assertTrue(reply.message_authenticator)
+        self.assertTrue(req.VerifyReply(reply))
+
     def setUp(self):
         self.server = RadiusServer('fake', 'whatever')
         self.origsocket = socket.socket
@@ -544,7 +551,7 @@ class TestRadius(unittest.TestCase):
         # send request
         with self.assertLogs('server', level='INFO') as log:
             self.server.auth_handler(req)
-            self.assertEqual(fd.data, b'\x02\x01\x00\x1b\x82\xb4\x88\xb4G\xbc:\xde\xc1\xe5A\xe0\xe7y\r\x1f!\x07state')
+            self.assert_valid_accept(req, fd.data)
             self.assertIn('INFO:server:Push approved by isaac.brock@example.com.', log.output)
 
     @patch('requests.Session.get', side_effect=mocked_sessions)
@@ -578,7 +585,7 @@ class TestRadius(unittest.TestCase):
             o.return_value = '00ub0oNGTSWTBKOLGLNR'
             self.server.auth_handler(req)
             o.assert_called_once_with('username')
-            self.assertEqual(fd.data, b'\x02\x01\x00\x1b\x82\xb4\x88\xb4G\xbc:\xde\xc1\xe5A\xe0\xe7y\r\x1f!\x07state')
+            self.assert_valid_accept(req, fd.data)
             self.assertIn('INFO:server:Push approved by username.', log.output)
 
 
